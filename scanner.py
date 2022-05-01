@@ -22,11 +22,13 @@ lex = Lex.MODULE
 num = 0
 ident = ""
 strings = ""
-identwords = dict()
-keywords = dict()
-operation_sign = dict()
-constants = dict()
-separators = dict()
+identLex = dict()
+keywordsLex = dict()
+signsLex = dict()
+realLex = dict()
+intLex = dict()
+charLex = dict()
+strLex = dict()
 # whitespace_count = 0  # счетчик пустых разделителей
 # signCount = 0  # счетчик разделителей
 signCount = 0  # счетчик знаков
@@ -139,10 +141,10 @@ def scanIdent():
     lex = _kw.get(ident, Lex.IDENT)
     if lex == Lex.IDENT:
         ident_count += 1
-        dictionary(identwords, ident)
+        dictionary(identLex, ident)
     else:
         keyword_count += 1
-        dictionary(keywords, ident)
+        dictionary(keywordsLex, ident)
 
 
 # распознавание чисел(целые, вещественные, шестнадцатеричных) и закодированных символов
@@ -172,7 +174,7 @@ def scanNumber():
             num = str(num) + text.ch
             text.nextCh()
             if text.ch not in string.ascii_letters:
-                lex = Lex.NUMHEX
+                lex = Lex.NUMINT
                 constant_count += 1
             else:
                 num = str(num)
@@ -257,7 +259,7 @@ def scanNumber():
             num += text.ch
         print(num)
         error.lexError("Неверно задано число")
-    dictionary(constants, num)
+    dictionary(intLex, num)
 
 
 # распознавание комментариев
@@ -341,7 +343,7 @@ def stringLine():
                 strings += text.ch
             print(strings)
             error.lexError("Нет разделителя после строки")
-    dictionary(constants, strings)
+    dictionary(strLex, strings)
             
 
 # распознавание лексемы
@@ -358,7 +360,7 @@ def nextLex():
     elif text.ch == ';':
         lex = Lex.SEMI
         signCount += 1
-        dictionary(separators, ';')
+        dictionary(signsLex, ';')
         text.nextCh()
     elif text.ch in {"'", '"'}:
         stringLine()
@@ -370,16 +372,16 @@ def nextLex():
         else:
             lex = Lex.LPAR
             signCount += 1
-            dictionary(separators, '(')
+            dictionary(signsLex, '(')
     elif text.ch == ')':
         lex = Lex.RPAR
         signCount += 1
-        dictionary(separators, ')')
+        dictionary(signsLex, ')')
         text.nextCh()
     elif text.ch == ',':
         lex = Lex.COMMA
         signCount += 1
-        dictionary(separators, ',')
+        dictionary(signsLex, ',')
         text.nextCh()
     elif text.ch == '.':
         text.nextCh()
@@ -387,69 +389,69 @@ def nextLex():
             lex = Lex.TWODOT
             signCount += 1
             signCount += 1
-            dictionary(operation_sign, '..')
+            dictionary(signsLex, '..')
             text.nextCh()
         else:
             lex = Lex.DOT
             signCount += 1
-            dictionary(separators, '.')
+            dictionary(signsLex, '.')
     elif text.ch == ':':
         text.nextCh()
         if text.ch == '=':
             lex = Lex.ASS
             signCount += 1
-            dictionary(operation_sign, ':=')
+            dictionary(signsLex, ':=')
             text.nextCh()
         else:
             lex = Lex.COLON
             signCount += 1
-            dictionary(separators, ':')
+            dictionary(signsLex, ':')
     elif text.ch == '>':
         text.nextCh()
         if text.ch == '=':
             lex = Lex.GE
             signCount += 1
-            dictionary(operation_sign, '>=')
+            dictionary(signsLex, '>=')
             text.nextCh()
         else:
             lex = Lex.GT
             signCount += 1
-            dictionary(operation_sign, '>')
+            dictionary(signsLex, '>')
     elif text.ch == '<':
         text.nextCh()
         if text.ch == '=':
             lex = Lex.LE
             signCount += 1
-            dictionary(operation_sign, '<=')
+            dictionary(signsLex, '<=')
             text.nextCh()
         else:
             lex = Lex.LT
             signCount += 1
-            dictionary(operation_sign, '<')
+            dictionary(signsLex, '<')
     elif text.ch == '=':
         lex = Lex.EQ
         signCount += 1
-        dictionary(operation_sign, '=')
+        dictionary(signsLex, '=')
         text.nextCh()
     elif text.ch == '#':
         lex = Lex.NE
         signCount += 1
-        dictionary(operation_sign, '#')
+        dictionary(signsLex, '#')
         text.nextCh()
     elif text.ch == '+':
         lex = Lex.PLUS
         signCount += 1
-        dictionary(operation_sign, '+')
+        dictionary(signsLex, '+')
         text.nextCh()
     elif text.ch == '-':
         lex = Lex.MINUS
         signCount += 1
-        dictionary(operation_sign, '-')
+        dictionary(signsLex, '-')
         text.nextCh()
     elif text.ch == '*':
         lex = Lex.MULT
         signCount += 1
-        dictionary(operation_sign, '*')
+        dictionary(signsLex, '*')
         text.nextCh()
     elif text.ch == '^':
         lex = Lex.CARET
@@ -460,37 +462,37 @@ def nextLex():
     elif text.ch == '&':
         lex = Lex.AMPERSAND
         signCount += 1
-        dictionary(operation_sign, '&')
+        dictionary(signsLex, '&')
         text.nextCh()
     elif text.ch == '|':
         lex = Lex.PIPELINE
         signCount += 1
-        dictionary(operation_sign, '|')
+        dictionary(signsLex, '|')
         text.nextCh()
     elif text.ch == '[':
         lex = Lex.LBRACKET
         signCount += 1
-        dictionary(separators, '[')
+        dictionary(signsLex, '[')
         text.nextCh()
     elif text.ch == ']':
         lex = Lex.RBRACKET
         signCount += 1
-        dictionary(separators, ']')
+        dictionary(signsLex, ']')
         text.nextCh()
     elif text.ch == '{':
         lex = Lex.LBRACES
         signCount += 1
-        dictionary(separators, '{')
+        dictionary(signsLex, '{')
         text.nextCh()
     elif text.ch == '}':
         lex = Lex.RBRACES
         signCount += 1
-        dictionary(separators, '}')
+        dictionary(signsLex, '}')
         text.nextCh()
     elif text.ch == '/':
         lex = Lex.SLASH
         signCount += 1
-        dictionary(operation_sign, '/')
+        dictionary(signsLex, '/')
         text.nextCh()
     elif text.ch == text.chEOT:
         lex = Lex.EOT
@@ -557,17 +559,20 @@ def writeValue(class_lex, dist_lex, count_lex, all_lex):
 def writeValueSort(class_lex, dist_lex, count_lex, all_lex):
     global write_file
 
-    id = list(identwords)
+    id = list(identLex)
     quick_sort(id)
-    write_file += text.chEOL + text.chEOL + "Класс " + class_lex + text.chEOL
-    write_file += "   Абсолютная частота лексем:    " + str(count_lex) + text.chEOL
-    write_file += "   Относительная частота лексем: " + str(round(count_lex/all_lex, 2)) + text.chEOL + text.chEOL
-    write_file += ' '*8 + "Лексемы   Частота  Относительная" + text.chEOL
-    write_file += ' '*30 + "частота" + text.chEOL
-    write_file += '-'*48 + text.chEOL
+    write_file += "Вариант Д:"
+    write_file += text.chEOL + class_lex + text.chEOL
+    # write_file += "   Абсолютная частота лексем:    " + str(count_lex) + text.chEOL
+    # write_file += "   Относительная частота лексем: " + str(round(count_lex/all_lex, 2)) + text.chEOL + text.chEOL
+    write_file += '-' * 53 + text.chEOL
+    write_file += ' '*8 + "Лексемы     Частота    Относительная" + text.chEOL
+    write_file += ' '*34 + "частота" + text.chEOL
+    write_file += '-'*53 + text.chEOL
     for k in id:
-        write_file += ' '*(15 - len(str(k))) + str(k) + ' '*6 + str(dist_lex.get(k)) + \
-                      ' '*(11 - len(str(dist_lex.get(k)))) + str(round(dist_lex.get(k)/count_lex, 2)) + text.chEOL
+        write_file += ' '*(15 - len(str(k))) + str(k) + ' '*8 + str(dist_lex.get(k)) + \
+                      ' '*(13 - len(str(dist_lex.get(k)))) + str(round(dist_lex.get(k)/count_lex, 2)) + text.chEOL
+    write_file += '-' * 53 + text.chEOL
 
 
 def calcScan():
@@ -578,12 +583,15 @@ def calcScan():
     all_l = calcLex()
     write_file += text.chEOL
     write_file += "Обработаны файлы: " + text.chEOL + text.listfile + text.chEOL + text.chEOL
-    write_file += "Число лексем: " + str(all_l) + text.chEOL + text.chEOL
-    writeValueSort('ИДЕНТИФИКАТОРЫ в лексикографическом порядке', identwords, ident_count, all_l)
-    writeValue('ЗАРЕЗЕРВИРОВАННЫЕ СЛОВА', keywords, keyword_count, all_l)
-    writeValue('ЗНАКИ ОПЕРАЦИЙ', operation_sign, signCount, all_l)
-    writeValue('РАЗДЕЛИТЕЛИ', separators, signCount, all_l)
-    writeValue('КОНСТАНТЫ', constants, constant_count, all_l)
+    write_file += "Вариант А:" + text.chEOL
+    write_file += "Общее число лексем - " + str(all_l) + text.chEOL + text.chEOL
+    writeValue('ЗНАКИ', signsLex, signCount, all_l)
+    writeValue('ЦЕЛЫЕ', intLex, constant_count, all_l)
+    writeValue('ВЕЩЕСТВЕННЫЕ', realLex, constant_count, all_l)
+    writeValue('СИМВОЛЫ', charLex, constant_count, all_l)
+    writeValue('СТРОКИ', strLex, constant_count, all_l)
+    writeValue('ЗАРЕЗЕРВИРОВАННЫЕ СЛОВА', keywordsLex, keyword_count, all_l)
+    writeValueSort('Перечень идентификаторов в лексикографическом порядке', identLex, ident_count, all_l)
 
 
 
