@@ -1,0 +1,22 @@
+x Scan Oberon2 GetSymbol firstLetter
+
+1991 0DH 12.3 4.567E8 0.57712566D-6
+
+"Oberon2" "Don't worry!" "x"
+
+'Oberon2' "Don't worry!" 'X'
+
++ := ARRAY IMPORT RETURN
+ ^ BEGIN IN THEN
+* = BY IS TO
+/ # CASE LOOP TYPE
+~ < CONST MOD UNTIL
+& > DIV MODULE VAR
+. <= DO NIL WHILE
+, >= ELSE OF WITH
+; .. ELSIF OR
+| : END POINTER
+( ) EXIT PROCEDURE
+[ ] FOR RECORD
+{ } IF REPEAT
+  
