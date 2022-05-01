@@ -9,12 +9,12 @@ import loc
 
 
 class Lex(Enum):
-    IDENT, NUMINT, NUMREAL, NUMHEX, MODULE, IMPORT, BEGIN, END, CONST, TWODOT,\
+    IDENT, NUMINT, NUMREAL, MODULE, IMPORT, BEGIN, END, CONST, TWODOT,\
     BY, STR, CHAR, VAR, WHILE, DO, IF, THEN, ELSIF, ELSE, MULT, DIV, MOD, \
     CASE, EXIT, FOR, ARRAY, IN, IS, LOOP, NIL, OF, OR, POINTER, PROCEDURE, \
     RECORD, REPEAT, RETURN, PLUS, MINUS, EQ, NE, LT, LE, GT, GE, DOT, COMMA, \
     LBRACKET, RBRACKET, LBRACES, RBRACES, PIPELINE, AMPERSAND, TILDE, CARET, \
-    SLASH, TO, TYPE, UNTIL, WITH, COLON, SEMI, ASS, LPAR, RPAR, SET, EOT = range(68)
+    SLASH, TO, TYPE, UNTIL, WITH, COLON, SEMI, ASS, LPAR, RPAR, SET, EOT = range(67)
 
 
 MAXINT = 0x7FFFFFFF
@@ -28,8 +28,8 @@ operation_sign = dict()
 constants = dict()
 separators = dict()
 # whitespace_count = 0  # счетчик пустых разделителей
-separator_count = 0  # счетчик разделителей
-operation_sign_count = 0  # счетчик знаков операций
+# signCount = 0  # счетчик разделителей
+signCount = 0  # счетчик знаков
 constant_count = 0  # счетчик констант
 keyword_count = 0  # счетчик ключевых(зарезервированных) слов
 ident_count = 0  # счетчик идентификаторов
@@ -81,7 +81,6 @@ _names = {
     Lex.IDENT: 'идентификатор',
     Lex.NUMINT: 'целое число',
     Lex.NUMREAL: 'вещественное число',
-    Lex.NUMHEX: 'шестнадцатеричное число',
     Lex.STR: 'строка',
     Lex.CHAR: 'символ',
     Lex.MULT: '"*"',
@@ -347,7 +346,7 @@ def stringLine():
 
 # распознавание лексемы
 def nextLex():
-    global lex, separator_count, operation_sign_count
+    global lex, signCount
 
     loc.lexPos = loc.pos
     while text.ch in {text.chSPACE, text.chTAB, text.chEOL}:
@@ -358,7 +357,7 @@ def nextLex():
         scanNumber()
     elif text.ch == ';':
         lex = Lex.SEMI
-        separator_count += 1
+        signCount += 1
         dictionary(separators, ';')
         text.nextCh()
     elif text.ch in {"'", '"'}:
@@ -370,86 +369,86 @@ def nextLex():
             nextLex()
         else:
             lex = Lex.LPAR
-            separator_count += 1
+            signCount += 1
             dictionary(separators, '(')
     elif text.ch == ')':
         lex = Lex.RPAR
-        separator_count += 1
+        signCount += 1
         dictionary(separators, ')')
         text.nextCh()
     elif text.ch == ',':
         lex = Lex.COMMA
-        separator_count += 1
+        signCount += 1
         dictionary(separators, ',')
         text.nextCh()
     elif text.ch == '.':
         text.nextCh()
         if text.ch == '.':
             lex = Lex.TWODOT
-            operation_sign_count += 1
-            separator_count += 1
+            signCount += 1
+            signCount += 1
             dictionary(operation_sign, '..')
             text.nextCh()
         else:
             lex = Lex.DOT
-            separator_count += 1
+            signCount += 1
             dictionary(separators, '.')
     elif text.ch == ':':
         text.nextCh()
         if text.ch == '=':
             lex = Lex.ASS
-            operation_sign_count += 1
+            signCount += 1
             dictionary(operation_sign, ':=')
             text.nextCh()
         else:
             lex = Lex.COLON
-            separator_count += 1
+            signCount += 1
             dictionary(separators, ':')
     elif text.ch == '>':
         text.nextCh()
         if text.ch == '=':
             lex = Lex.GE
-            operation_sign_count += 1
+            signCount += 1
             dictionary(operation_sign, '>=')
             text.nextCh()
         else:
             lex = Lex.GT
-            operation_sign_count += 1
+            signCount += 1
             dictionary(operation_sign, '>')
     elif text.ch == '<':
         text.nextCh()
         if text.ch == '=':
             lex = Lex.LE
-            operation_sign_count += 1
+            signCount += 1
             dictionary(operation_sign, '<=')
             text.nextCh()
         else:
             lex = Lex.LT
-            operation_sign_count += 1
+            signCount += 1
             dictionary(operation_sign, '<')
     elif text.ch == '=':
         lex = Lex.EQ
-        operation_sign_count += 1
+        signCount += 1
         dictionary(operation_sign, '=')
         text.nextCh()
     elif text.ch == '#':
         lex = Lex.NE
-        operation_sign_count += 1
+        signCount += 1
         dictionary(operation_sign, '#')
         text.nextCh()
     elif text.ch == '+':
         lex = Lex.PLUS
-        operation_sign_count += 1
+        signCount += 1
         dictionary(operation_sign, '+')
         text.nextCh()
     elif text.ch == '-':
         lex = Lex.MINUS
-        operation_sign_count += 1
+        signCount += 1
         dictionary(operation_sign, '-')
         text.nextCh()
     elif text.ch == '*':
         lex = Lex.MULT
-        operation_sign_count += 1
+        signCount += 1
         dictionary(operation_sign, '*')
         text.nextCh()
     elif text.ch == '^':
@@ -460,37 +459,37 @@ def nextLex():
         text.nextCh()
     elif text.ch == '&':
         lex = Lex.AMPERSAND
-        operation_sign_count += 1
+        signCount += 1
         dictionary(operation_sign, '&')
         text.nextCh()
     elif text.ch == '|':
         lex = Lex.PIPELINE
-        operation_sign_count += 1
+        signCount += 1
         dictionary(operation_sign, '|')
         text.nextCh()
     elif text.ch == '[':
         lex = Lex.LBRACKET
-        separator_count += 1
+        signCount += 1
         dictionary(separators, '[')
         text.nextCh()
     elif text.ch == ']':
         lex = Lex.RBRACKET
-        separator_count += 1
+        signCount += 1
         dictionary(separators, ']')
         text.nextCh()
     elif text.ch == '{':
         lex = Lex.LBRACES
-        separator_count += 1
+        signCount += 1
         dictionary(separators, '{')
         text.nextCh()
     elif text.ch == '}':
         lex = Lex.RBRACES
-        separator_count += 1
+        signCount += 1
         dictionary(separators, '}')
         text.nextCh()
     elif text.ch == '/':
         lex = Lex.SLASH
-        operation_sign_count += 1
+        signCount += 1
         dictionary(operation_sign, '/')
         text.nextCh()
     elif text.ch == text.chEOT:
@@ -582,8 +581,8 @@ def calcScan():
     write_file += "Число лексем: " + str(all_l) + text.chEOL + text.chEOL
     writeValueSort('ИДЕНТИФИКАТОРЫ в лексикографическом порядке', identwords, ident_count, all_l)
     writeValue('ЗАРЕЗЕРВИРОВАННЫЕ СЛОВА', keywords, keyword_count, all_l)
-    writeValue('ЗНАКИ ОПЕРАЦИЙ', operation_sign, operation_sign_count, all_l)
-    writeValue('РАЗДЕЛИТЕЛИ', separators, separator_count, all_l)
+    writeValue('ЗНАКИ ОПЕРАЦИЙ', operation_sign, signCount, all_l)
+    writeValue('РАЗДЕЛИТЕЛИ', separators, signCount, all_l)
     writeValue('КОНСТАНТЫ', constants, constant_count, all_l)
 
 
