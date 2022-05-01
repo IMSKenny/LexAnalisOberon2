@@ -32,9 +32,12 @@ strLex = dict()
 # whitespace_count = 0  # счетчик пустых разделителей
 # signCount = 0  # счетчик разделителей
 signCount = 0  # счетчик знаков
-constant_count = 0  # счетчик констант
-keyword_count = 0  # счетчик ключевых(зарезервированных) слов
-ident_count = 0  # счетчик идентификаторов
+intCount = 0  # счетчик целых
+realCount = 0  # счетчик вещественных
+charCount = 0  # счетчик символов
+strCount = 0  # счетчик строк
+keywordsCount = 0  # счетчик ключевых(зарезервированных) слов
+identСount = 0  # счетчик идентификаторов
 write_file = "-"*54 + text.chEOL + "Лексический анализатор языка программирования Оберон-2 " + text.chEOL + "-"*54
 
 
@@ -131,7 +134,7 @@ def lexName(L):
 
 # распознавание идентификаторов и зарезервированных слов
 def scanIdent():
-    global lex, ident, keyword_count, ident_count
+    global lex, ident, keywordsCount, identСount
 
     ident = text.ch  # Первая буква
     text.nextCh()
@@ -140,16 +143,16 @@ def scanIdent():
         text.nextCh()
     lex = _kw.get(ident, Lex.IDENT)
     if lex == Lex.IDENT:
-        ident_count += 1
+        identСount += 1
         dictionary(identLex, ident)
     else:
-        keyword_count += 1
+        keywordsCount += 1
         dictionary(keywordsLex, ident)
 
 
 # распознавание чисел(целые, вещественные, шестнадцатеричных) и закодированных символов
 def scanNumber():
-    global num, lex, constant_count
+    global num, lex, intCount, realCount, charCount
 
     num = 0
     num_real = 0
@@ -175,7 +178,8 @@ def scanNumber():
             text.nextCh()
             if text.ch not in string.ascii_letters:
                 lex = Lex.NUMINT
-                constant_count += 1
+                intCount += 1
+                dictionary(intLex, num)
             else:
                 num = str(num)
                 while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
@@ -188,7 +192,8 @@ def scanNumber():
             text.nextCh()
             if text.ch not in string.ascii_letters:
                 lex = Lex.CHAR
-                constant_count += 1
+                charCount += 1
+                dictionary(charLex, num)
             else:
                 num = str(num)
                 while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
@@ -247,11 +252,13 @@ def scanNumber():
                 print(num)
                 error.lexError("Неверно задано вещественное число")
         lex = Lex.NUMREAL
-        constant_count += 1
+        realCount += 1
+        dictionary(realLex, num)
         num_real = num_real*sign*(10**ed)
     elif text.ch not in string.ascii_letters:                
         lex = Lex.NUMINT
-        constant_count += 1
+        intCount += 1
+        dictionary(intLex, num)
     else:
         num = str(num)
         while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
@@ -259,7 +266,7 @@ def scanNumber():
             num += text.ch
         print(num)
         error.lexError("Неверно задано число")
-    dictionary(intLex, num)
+    # dictionary(intLex, num)
 
 
 # распознавание комментариев
@@ -283,7 +290,7 @@ def Comment():
 
 # распознавание строк
 def stringLine():
-    global strings, lex
+    global strings, lex, strCount
 
     strings = ''
     if text.ch == '"':
@@ -308,6 +315,8 @@ def stringLine():
             strings += text.ch
             text.nextCh()
             lex = Lex.STR
+            strCount += 1
+            dictionary(strLex, strings)
         else:
             while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
                 text.nextCh()
@@ -337,13 +346,14 @@ def stringLine():
             strings += text.ch
             text.nextCh()
             lex = Lex.STR
+            strCount += 1
+            dictionary(strLex, strings)
         else:
             while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
                 text.nextCh()
                 strings += text.ch
             print(strings)
             error.lexError("Нет разделителя после строки")
-    dictionary(strLex, strings)
             
 
 # распознавание лексемы
@@ -548,12 +558,14 @@ def writeValue(class_lex, dist_lex, count_lex, all_lex):
     write_file += text.chEOL + text.chEOL + "Класс " + class_lex + text.chEOL
     write_file += "   Абсолютная частота лексем:    " + str(count_lex) + text.chEOL
     write_file += "   Относительная частота лексем: " + str(round(count_lex/all_lex, 2)) + text.chEOL + text.chEOL
-    write_file += ' '*8 + "Лексемы   Частота  Относительная" + text.chEOL
-    write_file += ' '*30 + "частота" + text.chEOL
-    write_file += '-'*48 + text.chEOL
+    write_file += '-' * 45 + text.chEOL
+    write_file += ' '*2 + "Классы лексем    Частота    Относительная" + text.chEOL
+    write_file += ' '*33 + "частота" + text.chEOL
+    write_file += '-'*45 + text.chEOL
     for k, v in dist_lex.items():
-        write_file += ' '*(15 - len(str(k))) + str(k) + ' '*6 + str(v) + ' '*(11 - len(str(v))) + \
+        write_file += ' '*(15 - len(str(k))) + str(k) + ' '*7 + str(v) + ' '*(13 - len(str(v))) + \
                      str(round(v/count_lex, 2)) + text.chEOL
+    write_file += '-' * 45 + text.chEOL
 
 
 def writeValueSort(class_lex, dist_lex, count_lex, all_lex):
@@ -571,7 +583,7 @@ def writeValueSort(class_lex, dist_lex, count_lex, all_lex):
     write_file += '-'*53 + text.chEOL
     for k in id:
         write_file += ' '*(15 - len(str(k))) + str(k) + ' '*8 + str(dist_lex.get(k)) + \
-                      ' '*(13 - len(str(dist_lex.get(k)))) + str(round(dist_lex.get(k)/count_lex, 2)) + text.chEOL
+                      ' '*(13 - len(str(dist_lex.get(k)))) + str(round((dist_lex.get(k)/count_lex)*100, 2)) + text.chEOL
     write_file += '-' * 53 + text.chEOL
 
 
@@ -585,13 +597,35 @@ def calcScan():
     write_file += "Обработаны файлы: " + text.chEOL + text.listfile + text.chEOL + text.chEOL
     write_file += "Вариант А:" + text.chEOL
     write_file += "Общее число лексем - " + str(all_l) + text.chEOL + text.chEOL
-    writeValue('ЗНАКИ', signsLex, signCount, all_l)
-    writeValue('ЦЕЛЫЕ', intLex, constant_count, all_l)
-    writeValue('ВЕЩЕСТВЕННЫЕ', realLex, constant_count, all_l)
-    writeValue('СИМВОЛЫ', charLex, constant_count, all_l)
-    writeValue('СТРОКИ', strLex, constant_count, all_l)
-    writeValue('ЗАРЕЗЕРВИРОВАННЫЕ СЛОВА', keywordsLex, keyword_count, all_l)
-    writeValueSort('Перечень идентификаторов в лексикографическом порядке', identLex, ident_count, all_l)
+    write_file += "Вариант Б:" + text.chEOL
+    write_file += "Посчет частоты лексем каждого класса" + text.chEOL
+    write_file += '-' * 45 + text.chEOL
+    write_file += ' ' * 2 + "Классы лексем    Частота    Относительная" + text.chEOL
+    write_file += ' ' * 33 + "частота" + text.chEOL
+    write_file += '-' * 45 + text.chEOL
+    write_file += ' ' * (15 - len('Целые')) + 'Целые' + ' '* 7 + str(intCount) + \
+                  ' ' * (13 - len(str(intCount))) + str(round((intCount / all_l) * 100, 2)) + "%" + text.chEOL
+    write_file += ' ' * (15 - len('Вещественные')) + 'Вещественные' + ' '* 7 + str(realCount) + \
+                  ' ' * (13 - len(str(realCount))) + str(round((realCount / all_l) * 100, 2)) + "%" + text.chEOL
+    write_file += ' ' * (15 - len('Символы')) + 'Символы' + ' '* 7 + str(charCount) + \
+                  ' ' * (13 - len(str(charCount))) + str(round((charCount / all_l) * 100, 2)) + "%" + text.chEOL
+    write_file += ' ' * (15 - len('Строки')) + 'Строки' + ' '* 7 + str(strCount) + ' ' * (13 - len(str(strCount))) + \
+                  str(round((strCount / all_l) * 100, 2)) + "%" + text.chEOL
+    write_file += ' ' * (15 - len('Идентификаторы')) + 'Идентификаторы' + ' ' * 7 + str(identСount) + \
+                  ' ' * (13 - len(str(identСount))) + str(round((identСount / all_l) * 100, 2)) + "%" + text.chEOL
+    write_file += ' ' * (15 - len('Знаки')) + 'Знаки' + ' ' * 7 + str(signCount) + ' ' * (13 - len(str(signCount))) + \
+                  str(round((signCount / all_l) * 100, 2)) + "%" + text.chEOL
+    for k, v in keywordsLex.items():
+        write_file += ' ' * (15 - len(str(k))) + str(k) + ' ' * 7 + str(v) + ' ' * (13 - len(str(v))) + \
+                      str(round(v / all_l, 2)*100) + "%" + text.chEOL
+    write_file += '-' * 45 + text.chEOL + text.chEOL
+    # writeValue('ЦЕЛЫЕ', intLex, intCount, all_l)
+    # writeValue('ВЕЩЕСТВЕННЫЕ', realLex, realCount, all_l)
+    # writeValue('СИМВОЛЫ', charLex, charCount, all_l)
+    # writeValue('СТРОКИ', strLex, strCount, all_l)
+    # writeValue('ЗНАКИ', signsLex, signCount, all_l)
+    # writeValue('ЗАРЕЗЕРВИРОВАННЫЕ СЛОВА', keywordsLex, keywordsCount, all_l)
+    writeValueSort('Перечень идентификаторов в лексикографическом порядке', identLex, identСount, all_l)
 
 
 
