@@ -13,8 +13,16 @@ def _error(msg, p):
 def lexError(msg):
     _error(msg, loc.pos)
 
+def lexError2(msg):
+    _error(msg, loc.posWord)
+
 def expect(msg):
     _error("Ожидается " + msg, loc.lexPos)
+
+
+def expect2(msg):
+    _error("Ожидается " + msg, loc.posWord)
+
 
 def ctxError(msg):
     _error(msg, loc.lexPos)

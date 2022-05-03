@@ -56,7 +56,10 @@ def nextCh():
         ch = _src[_i]
         # print(ch, end="")
         loc.pos += 1
+        loc.posWord += 1
         _i += 1
+        # if ch == chSPACE:
+        #     loc.posWord = 0
         if ch in {'\n', '\r'}:
             ch = chEOL
             loc.pos = 0

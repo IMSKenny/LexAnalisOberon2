@@ -7,9 +7,8 @@ import error
 import loc
 
 
-
 class Lex(Enum):
-    IDENT, NUMINT, NUMREAL, MODULE, IMPORT, BEGIN, END, CONST, TWODOT,\
+    IDENT, NUMINT, NUMREAL, MODULE, IMPORT, BEGIN, END, CONST, TWODOT, \
     BY, STR, CHAR, VAR, WHILE, DO, IF, THEN, ELSIF, ELSE, MULT, DIV, MOD, \
     CASE, EXIT, FOR, ARRAY, IN, IS, LOOP, NIL, OF, OR, POINTER, PROCEDURE, \
     RECORD, REPEAT, RETURN, PLUS, MINUS, EQ, NE, LT, LE, GT, GE, DOT, COMMA, \
@@ -22,6 +21,8 @@ lex = Lex.MODULE
 num = 0
 ident = ""
 strings = ""
+comm = ""
+locCount = 0
 identLex = dict()
 keywordsLex = dict()
 signsLex = dict()
@@ -37,9 +38,8 @@ realCount = 0  # счетчик вещественных
 charCount = 0  # счетчик символов
 strCount = 0  # счетчик строк
 keywordsCount = 0  # счетчик ключевых(зарезервированных) слов
-identСount = 0  # счетчик идентификаторов
-write_file = "-"*54 + text.chEOL + "Лексический анализатор языка программирования Оберон-2 " + text.chEOL + "-"*54
-
+identCount = 0  # счетчик идентификаторов
+write_file = "-" * 54 + text.chEOL + "Лексический анализатор языка программирования Оберон-2 " + text.chEOL + "-" * 54
 
 # словарь ключевых слов
 _kw = {
@@ -80,7 +80,6 @@ _kw = {
     "RETURN": Lex.RETURN
 }
 
-
 # словарь для вывода имен лексем
 _names = {
     Lex.IDENT: 'идентификатор',
@@ -115,7 +114,7 @@ _names = {
     Lex.RBRACES: '"}"',
     Lex.SLASH: '"/"',
     Lex.TWODOT: '".."'
-    
+
 }
 
 
@@ -134,7 +133,7 @@ def lexName(L):
 
 # распознавание идентификаторов и зарезервированных слов
 def scanIdent():
-    global lex, ident, keywordsCount, identСount
+    global lex, ident, keywordsCount, identCount
 
     ident = text.ch  # Первая буква
     text.nextCh()
@@ -143,17 +142,43 @@ def scanIdent():
         text.nextCh()
     lex = _kw.get(ident, Lex.IDENT)
     if lex == Lex.IDENT:
-        identСount += 1
+        identCount += 1
         dictionary(identLex, ident)
     else:
         keywordsCount += 1
         dictionary(keywordsLex, ident)
 
 
+def whatSymbol(char):
+    global num, lex, intCount, realCount, charCount, locCount
+
+    num = str(num) + text.ch
+    text.nextCh()
+    if text.ch in {text.chEOL, text.chEOT, text.chSPACE}:
+        if char == 'H':
+            lex = Lex.NUMINT
+            intCount += 1
+            dictionary(intLex, num)
+        else:
+            lex = Lex.CHAR
+            charCount += 1
+            dictionary(charLex, num)
+    else:
+        num = str(num)
+        while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
+            num += text.ch
+            text.nextCh()
+            locCount += 1
+        loc.posWord -= locCount
+        print(num)
+        error.expect2("пробел")
+        loc.posWord = 0
+        locCount = 0
+
+
 # распознавание чисел(целые, вещественные, шестнадцатеричных) и закодированных символов
 def scanNumber():
-    global num, lex, intCount, realCount, charCount
-
+    global num, lex, intCount, realCount, charCount, locCount
     num = 0
     num_real = 0
     ed = 0
@@ -167,68 +192,78 @@ def scanNumber():
                 text.nextCh()
                 num += text.ch
             print(num)
-            error.lexError("Слишком большое число")
+            error.lexError2("Слишком большое число")
+            loc.posWord = 0
         text.nextCh()
+        if text.ch == 'H':
+            whatSymbol(text.ch)
+        elif text.ch == 'X':
+            whatSymbol(text.ch)
     if text.ch in {"A", "B", "C", "D", "E", "F"}:
         while text.ch in {"A", "B", "C", "D", "E", "F"} or (text.ch in string.digits):
             num = str(num) + text.ch
             text.nextCh()
+
         if text.ch == 'H':
-            num = str(num) + text.ch
-            text.nextCh()
-            if text.ch not in string.ascii_letters:
-                lex = Lex.NUMINT
-                intCount += 1
-                dictionary(intLex, num)
-            else:
-                num = str(num)
-                while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
-                    text.nextCh()
-                    num += text.ch
-                print(num)
-                error.lexError("Неверно задано шестнадцатеричное число, либо символ")
-        elif text.ch == 'X':
-            num = str(num) + text.ch
-            text.nextCh()
-            if text.ch not in string.ascii_letters:
-                lex = Lex.CHAR
-                charCount += 1
-                dictionary(charLex, num)
-            else:
-                num = str(num)
-                while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
-                    text.nextCh()
-                    num += text.ch
-                print(num)
-                error.lexError("Неверно задано шестнадцатеричное число, либо символ")
+            whatSymbol(text.ch)
+        elif text.ch =='X':
+            whatSymbol(text.ch)
+        elif text.ch in string.ascii_letters:
+            while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
+                num += text.ch
+                text.nextCh()
+                locCount += 1
+            loc.posWord -= locCount
+            print(num)
+            error.expect2("'H', либо 'X'")
+            loc.posWord = 0
+            locCount = 0
         else:
             num = str(num)
-            while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
-                text.nextCh()
-                num += text.ch
+            # while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
+            #     text.nextCh()
+            #     num += text.ch
             print(num)
-            error.lexError("Неверно задано шестнадцатеричное число, либо символ")
+            error.expect2("'H', либо 'X'")
+            loc.posWord = 0
+            locCount = 0
     elif text.ch == '.':
         num = str(num) + text.ch
         text.nextCh()
+        num += text.ch
         if text.ch in string.digits:
             while text.ch in string.digits:
+                text.nextCh()
                 num += text.ch
-                text.nextCh() 
         else:
             num = str(num)
             while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
                 text.nextCh()
                 num += text.ch
+                locCount += 1
+            loc.posWord -= locCount
             print(num)
-            error.lexError("Неверно задано вещественное число")
+            error.expect2("цифра")
+            loc.posWord = 0
+            locCount = 0
+        if text.ch not in {'E', 'D', text.chSPACE}:
+            num = str(num)
+            while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
+                text.nextCh()
+                num += text.ch
+                locCount += 1
+            loc.posWord -= locCount - 1
+            print(num, end ='')
+            error.expect2("цифра, либо 'E', либо 'D', либо пробел")
+            loc.posWord = 0
+            locCount = 0
         if text.ch in {'E', 'D'}:
-            num_real = float(num)
-            num = str(num) + text.ch
-            text.nextCh() 
+            # num_real = float(num)
+            num = str(num)
+            text.nextCh()
             if text.ch in {'+', '-'}:
                 num += text.ch
-                text.nextCh() 
+                text.nextCh()
                 if text.ch == '-':
                     sign = -1
             if text.ch in string.digits:
@@ -236,53 +271,81 @@ def scanNumber():
                     if ed <= (MAXINT - int(text.ch)) // 10:
                         ed = 10 * ed + int(text.ch)
                     else:
-                        num = str(num + sign + ed)
+                        num = str(num) + str(sign) + str(ed)
                         while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
                             text.nextCh()
                             num += text.ch
                         print(num)
-                        error.lexError("Слишком большое число степени")
+                        error.lexError2("Слишком большая степень")
+                        loc.posWord = 0
                     num += text.ch
-                    text.nextCh()   
+                    text.nextCh()
             else:
                 num = str(num)
                 while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
-                    text.nextCh()
                     num += text.ch
+                    text.nextCh()
+                    locCount += 1
+                loc.posWord -= locCount - 1
                 print(num)
-                error.lexError("Неверно задано вещественное число")
+                error.expect2("цифра")
+                loc.posWord = 0
+                locCount = 0
+            if text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
+                num = str(num)
+                while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
+                    num += text.ch
+                    text.nextCh()
+                    locCount += 1
+                loc.posWord -= locCount - 1
+                print(num)
+                error.expect2("цифра")
+                loc.posWord = 0
+                locCount = 0
         lex = Lex.NUMREAL
         realCount += 1
         dictionary(realLex, num)
-        num_real = num_real*sign*(10**ed)
-    elif text.ch not in string.ascii_letters:                
+        num_real = num_real * sign * (10 ** ed)
+    elif text.ch not in string.ascii_letters:
         lex = Lex.NUMINT
         intCount += 1
         dictionary(intLex, num)
     else:
         num = str(num)
         while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
-            text.nextCh()
             num += text.ch
+            text.nextCh()
+            locCount += 1
+        loc.posWord -= locCount - 1
         print(num)
-        error.lexError("Неверно задано число")
+        error.expect2("цифра")
+        loc.posWord = 0
+        locCount = 0
     # dictionary(intLex, num)
 
 
 # распознавание комментариев
 def Comment():
+    global comm
+
+    comm += text.ch
     text.nextCh()  # *
     while True:
         while text.ch not in {'*', text.chEOT, '('}:
+            comm += text.ch
             text.nextCh()
         if text.ch == text.chEOT:
+            print(comm)
             error.lexError("Не закончен комментарий")
         elif text.ch == '*':
+            comm += text.ch
             text.nextCh()
             if text.ch == ')':
+                comm += text.ch
                 text.nextCh()
                 break
         else:
+            comm += text.ch
             text.nextCh()
             if text.ch == '*':
                 Comment()
@@ -302,7 +365,7 @@ def stringLine():
                 text.nextCh()
                 if text.ch == '"' or "'":
                     strings += text.ch
-                    text.nextCh()                
+                    text.nextCh()
             strings += text.ch
             text.nextCh()
         if text.ch == text.chEOT:
@@ -323,7 +386,7 @@ def stringLine():
                 strings += text.ch
             print(strings)
             error.lexError("Нет разделителя после строки")
-            
+
     elif text.ch == "'":
         strings += text.ch
         text.nextCh()
@@ -333,7 +396,7 @@ def stringLine():
                 text.nextCh()
                 if text.ch == "'" or '"':
                     strings += text.ch
-                    text.nextCh()                
+                    text.nextCh()
             strings += text.ch
             text.nextCh()
         if text.ch == text.chEOT:
@@ -354,15 +417,16 @@ def stringLine():
                 strings += text.ch
             print(strings)
             error.lexError("Нет разделителя после строки")
-            
+
 
 # распознавание лексемы
 def nextLex():
-    global lex, signCount
+    global lex, signCount, comm
 
     loc.lexPos = loc.pos
     while text.ch in {text.chSPACE, text.chTAB, text.chEOL}:
         text.nextCh()
+        loc.posWord = 0
     if text.ch in string.ascii_letters:
         scanIdent()
     elif text.ch in string.digits:
@@ -375,6 +439,7 @@ def nextLex():
     elif text.ch in {"'", '"'}:
         stringLine()
     elif text.ch == '(':
+        comm += text.ch
         text.nextCh()
         if text.ch == '*':
             Comment()
@@ -532,7 +597,7 @@ def list(l):
 def partition(array, begin, end):
     pivot = begin
 
-    for i in range(begin+1, end+1):
+    for i in range(begin + 1, end + 1):
         if array[i] <= array[begin]:
             pivot += 1
             array[i], array[pivot] = array[pivot], array[i]
@@ -543,12 +608,14 @@ def partition(array, begin, end):
 def quick_sort(array, begin=0, end=None):
     if end is None:
         end = len(array) - 1
+
     def _quicksort(array, begin, end):
         if begin >= end:
             return
         pivot = partition(array, begin, end)
         _quicksort(array, begin, pivot - 1)
         _quicksort(array, pivot + 1, end)
+
     return _quicksort(array, begin, end)
 
 
@@ -557,14 +624,14 @@ def writeValue(class_lex, dist_lex, count_lex, all_lex):
 
     write_file += text.chEOL + text.chEOL + "Класс " + class_lex + text.chEOL
     write_file += "   Абсолютная частота лексем:    " + str(count_lex) + text.chEOL
-    write_file += "   Относительная частота лексем: " + str(round(count_lex/all_lex, 2)) + text.chEOL + text.chEOL
+    write_file += "   Относительная частота лексем: " + str(round(count_lex / all_lex, 2)) + text.chEOL + text.chEOL
     write_file += '-' * 45 + text.chEOL
-    write_file += ' '*2 + "Классы лексем    Частота    Относительная" + text.chEOL
-    write_file += ' '*33 + "частота" + text.chEOL
-    write_file += '-'*45 + text.chEOL
+    write_file += ' ' * 2 + "Классы лексем    Частота    Относительная" + text.chEOL
+    write_file += ' ' * 33 + "частота" + text.chEOL
+    write_file += '-' * 45 + text.chEOL
     for k, v in dist_lex.items():
-        write_file += ' '*(15 - len(str(k))) + str(k) + ' '*7 + str(v) + ' '*(13 - len(str(v))) + \
-                     str(round(v/count_lex, 2)) + text.chEOL
+        write_file += ' ' * (15 - len(str(k))) + str(k) + ' ' * 7 + str(v) + ' ' * (13 - len(str(v))) + \
+                      str(round(v / count_lex, 2)) + text.chEOL
     write_file += '-' * 45 + text.chEOL
 
 
@@ -578,13 +645,21 @@ def writeValueSort(class_lex, dist_lex, count_lex, all_lex):
     # write_file += "   Абсолютная частота лексем:    " + str(count_lex) + text.chEOL
     # write_file += "   Относительная частота лексем: " + str(round(count_lex/all_lex, 2)) + text.chEOL + text.chEOL
     write_file += '-' * 53 + text.chEOL
-    write_file += ' '*8 + "Лексемы     Частота    Относительная" + text.chEOL
-    write_file += ' '*34 + "частота" + text.chEOL
-    write_file += '-'*53 + text.chEOL
-    for k in id:
-        write_file += ' '*(15 - len(str(k))) + str(k) + ' '*8 + str(dist_lex.get(k)) + \
-                      ' '*(13 - len(str(dist_lex.get(k)))) + str(round((dist_lex.get(k)/count_lex)*100, 2)) + text.chEOL
+    write_file += ' ' * 8 + "Лексемы     Частота    Относительная" + text.chEOL
+    write_file += ' ' * 34 + "частота" + text.chEOL
     write_file += '-' * 53 + text.chEOL
+    for k in id:
+        write_file += ' ' * (15 - len(str(k))) + str(k) + ' ' * 8 + str(dist_lex.get(k)) + \
+                      ' ' * (13 - len(str(dist_lex.get(k)))) + str(
+            round((dist_lex.get(k) / count_lex) * 100, 2)) + '%' + text.chEOL
+    write_file += '-' * 53 + text.chEOL
+
+
+def relFrequency(count, allLex):
+    if allLex == 0:
+        return "0"
+    else:
+        return str(round((count / allLex) * 100, 2)) + "%"
 
 
 def calcScan():
@@ -598,26 +673,26 @@ def calcScan():
     write_file += "Вариант А:" + text.chEOL
     write_file += "Общее число лексем - " + str(all_l) + text.chEOL + text.chEOL
     write_file += "Вариант Б:" + text.chEOL
-    write_file += "Посчет частоты лексем каждого класса" + text.chEOL
+    write_file += "Подсчет частоты лексем каждого класса" + text.chEOL
     write_file += '-' * 45 + text.chEOL
     write_file += ' ' * 2 + "Классы лексем    Частота    Относительная" + text.chEOL
     write_file += ' ' * 33 + "частота" + text.chEOL
     write_file += '-' * 45 + text.chEOL
-    write_file += ' ' * (15 - len('Целые')) + 'Целые' + ' '* 7 + str(intCount) + \
-                  ' ' * (13 - len(str(intCount))) + str(round((intCount / all_l) * 100, 2)) + "%" + text.chEOL
-    write_file += ' ' * (15 - len('Вещественные')) + 'Вещественные' + ' '* 7 + str(realCount) + \
-                  ' ' * (13 - len(str(realCount))) + str(round((realCount / all_l) * 100, 2)) + "%" + text.chEOL
-    write_file += ' ' * (15 - len('Символы')) + 'Символы' + ' '* 7 + str(charCount) + \
-                  ' ' * (13 - len(str(charCount))) + str(round((charCount / all_l) * 100, 2)) + "%" + text.chEOL
-    write_file += ' ' * (15 - len('Строки')) + 'Строки' + ' '* 7 + str(strCount) + ' ' * (13 - len(str(strCount))) + \
-                  str(round((strCount / all_l) * 100, 2)) + "%" + text.chEOL
-    write_file += ' ' * (15 - len('Идентификаторы')) + 'Идентификаторы' + ' ' * 7 + str(identСount) + \
-                  ' ' * (13 - len(str(identСount))) + str(round((identСount / all_l) * 100, 2)) + "%" + text.chEOL
+    write_file += ' ' * (15 - len('Целые')) + 'Целые' + ' ' * 7 + str(intCount) + \
+                  ' ' * (13 - len(str(intCount))) + relFrequency(intCount, all_l) + text.chEOL
+    write_file += ' ' * (15 - len('Вещественные')) + 'Вещественные' + ' ' * 7 + str(realCount) + \
+                  ' ' * (13 - len(str(realCount))) + relFrequency(realCount, all_l) + text.chEOL
+    write_file += ' ' * (15 - len('Символы')) + 'Символы' + ' ' * 7 + str(charCount) + \
+                  ' ' * (13 - len(str(charCount))) + relFrequency(charCount, all_l) + text.chEOL
+    write_file += ' ' * (15 - len('Строки')) + 'Строки' + ' ' * 7 + str(strCount) + ' ' * (13 - len(str(strCount))) + \
+                  relFrequency(strCount, all_l) + text.chEOL
+    write_file += ' ' * (15 - len('Идентификаторы')) + 'Идентификаторы' + ' ' * 7 + str(identCount) + \
+                  ' ' * (13 - len(str(identCount))) + relFrequency(identCount, all_l) + text.chEOL
     write_file += ' ' * (15 - len('Знаки')) + 'Знаки' + ' ' * 7 + str(signCount) + ' ' * (13 - len(str(signCount))) + \
-                  str(round((signCount / all_l) * 100, 2)) + "%" + text.chEOL
+                  relFrequency(signCount, all_l) + text.chEOL
     for k, v in keywordsLex.items():
         write_file += ' ' * (15 - len(str(k))) + str(k) + ' ' * 7 + str(v) + ' ' * (13 - len(str(v))) + \
-                      str(round(v / all_l, 2)*100) + "%" + text.chEOL
+                      relFrequency(v, all_l) + text.chEOL
     write_file += '-' * 45 + text.chEOL + text.chEOL
     # writeValue('ЦЕЛЫЕ', intLex, intCount, all_l)
     # writeValue('ВЕЩЕСТВЕННЫЕ', realLex, realCount, all_l)
@@ -625,11 +700,4 @@ def calcScan():
     # writeValue('СТРОКИ', strLex, strCount, all_l)
     # writeValue('ЗНАКИ', signsLex, signCount, all_l)
     # writeValue('ЗАРЕЗЕРВИРОВАННЫЕ СЛОВА', keywordsLex, keywordsCount, all_l)
-    writeValueSort('Перечень идентификаторов в лексикографическом порядке', identLex, identСount, all_l)
-
-
-
-
-
-
-
+    writeValueSort('Перечень идентификаторов в лексикографическом порядке', identLex, identCount, all_l)
