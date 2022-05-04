@@ -149,37 +149,38 @@ def scanIdent():
         dictionary(keywordsLex, ident)
 
 
-def whatSymbol(char):
-    global num, lex, intCount, realCount, charCount, locCount
-
-    num = str(num) + text.ch
-    text.nextCh()
-    if text.ch in {text.chEOL, text.chEOT, text.chSPACE}:
-        if char == 'H':
-            lex = Lex.NUMINT
-            intCount += 1
-            dictionary(intLex, num)
-        else:
-            lex = Lex.CHAR
-            charCount += 1
-            dictionary(charLex, num)
-    else:
-        num = str(num)
-        while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
-            num += text.ch
-            text.nextCh()
-            locCount += 1
-        loc.posWord -= locCount
-        print(num)
-        error.expect2("пробел")
-        loc.posWord = 0
-        locCount = 0
+# def whatSymbol(char):
+#     global num, lex, intCount, realCount, charCount, locCount
+#
+#     num = str(num) + text.ch
+#     text.nextCh()
+#     if text.ch in {text.chEOL, text.chEOT, text.chSPACE}:
+#         if char == 'H':
+#             lex = Lex.NUMINT
+#             intCount += 1
+#             dictionary(intLex, num)
+#         else:
+#             lex = Lex.CHAR
+#             charCount += 1
+#             dictionary(charLex, num)
+#     else:
+#         num = str(num)
+#         while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
+#             num += text.ch
+#             text.nextCh()
+#             locCount += 1
+#         loc.posWord -= locCount
+#         print(num)
+#         error.expect2("пробел")
+#         loc.posWord = 0
+#         locCount = 0
 
 
 # распознавание чисел(целые, вещественные, шестнадцатеричных) и закодированных символов
 def scanNumber():
     global num, lex, intCount, realCount, charCount, locCount
     num = 0
+    numInt = 0
     num_real = 0
     ed = 0
     sign = 1
@@ -194,20 +195,28 @@ def scanNumber():
             print(num)
             error.lexError2("Слишком большое число")
             loc.posWord = 0
+        numInt = num
         text.nextCh()
-        if text.ch == 'H':
-            whatSymbol(text.ch)
-        elif text.ch == 'X':
-            whatSymbol(text.ch)
-    if text.ch in {"A", "B", "C", "D", "E", "F"}:
+    if text.ch == 'H':
+        lex = Lex.NUMINT
+        intCount += 1
+        dictionary(intLex, num)
+    elif text.ch == 'X':
+        lex = Lex.CHAR
+        charCount += 1
+        dictionary(charLex, num)
+    elif text.ch in {"A", "B", "C", "D", "E", "F"}:
         while text.ch in {"A", "B", "C", "D", "E", "F"} or (text.ch in string.digits):
             num = str(num) + text.ch
             text.nextCh()
-
         if text.ch == 'H':
-            whatSymbol(text.ch)
-        elif text.ch =='X':
-            whatSymbol(text.ch)
+            lex = Lex.NUMINT
+            intCount += 1
+            dictionary(intLex, num)
+        elif text.ch == 'X':
+            lex = Lex.CHAR
+            charCount += 1
+            dictionary(charLex, num)
         elif text.ch in string.ascii_letters:
             while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
                 num += text.ch
@@ -228,35 +237,29 @@ def scanNumber():
             loc.posWord = 0
             locCount = 0
     elif text.ch == '.':
-        num = str(num) + text.ch
+        num = str(num)
         text.nextCh()
-        num += text.ch
+        # num += text.ch
         if text.ch in string.digits:
+            num += '.'
             while text.ch in string.digits:
-                text.nextCh()
                 num += text.ch
+                text.nextCh()
         else:
-            num = str(num)
-            while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
-                text.nextCh()
-                num += text.ch
-                locCount += 1
-            loc.posWord -= locCount
-            print(num)
-            error.expect2("цифра")
-            loc.posWord = 0
-            locCount = 0
-        if text.ch not in {'E', 'D', text.chSPACE}:
-            num = str(num)
-            while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
-                text.nextCh()
-                num += text.ch
-                locCount += 1
-            loc.posWord -= locCount - 1
-            print(num, end ='')
-            error.expect2("цифра, либо 'E', либо 'D', либо пробел")
-            loc.posWord = 0
-            locCount = 0
+            lex = Lex.NUMINT
+            intCount += 1
+            dictionary(intLex, numInt)
+        # if text.ch not in {'E', 'D', text.chSPACE}:
+        #     num = str(num)
+        #     while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
+        #         text.nextCh()
+        #         num += text.ch
+        #         locCount += 1
+        #     loc.posWord -= locCount - 1
+        #     print(num, end='')
+        #     error.expect2("цифра, либо 'E', либо 'D', либо пробел")
+        #     loc.posWord = 0
+        #     locCount = 0
         if text.ch in {'E', 'D'}:
             # num_real = float(num)
             num = str(num)
@@ -291,36 +294,36 @@ def scanNumber():
                 error.expect2("цифра")
                 loc.posWord = 0
                 locCount = 0
-            if text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
-                num = str(num)
-                while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
-                    num += text.ch
-                    text.nextCh()
-                    locCount += 1
-                loc.posWord -= locCount - 1
-                print(num)
-                error.expect2("цифра")
-                loc.posWord = 0
-                locCount = 0
+            # if text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
+            #     num = str(num)
+            #     while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
+            #         num += text.ch
+            #         text.nextCh()
+            #         locCount += 1
+            #     loc.posWord -= locCount - 1
+            #     print(num)
+            #     error.expect2("цифра")
+            #     loc.posWord = 0
+            #     locCount = 0
         lex = Lex.NUMREAL
         realCount += 1
         dictionary(realLex, num)
         num_real = num_real * sign * (10 ** ed)
-    elif text.ch not in string.ascii_letters:
+    else: # text.ch in string.ascii_letters or text.ch in {text.chEOL, text.chEOT, text.chSPACE}:
         lex = Lex.NUMINT
         intCount += 1
         dictionary(intLex, num)
-    else:
-        num = str(num)
-        while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
-            num += text.ch
-            text.nextCh()
-            locCount += 1
-        loc.posWord -= locCount - 1
-        print(num)
-        error.expect2("цифра")
-        loc.posWord = 0
-        locCount = 0
+    # else:
+    #     num = str(num)
+    #     while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
+    #         num += text.ch
+    #         text.nextCh()
+    #         locCount += 1
+    #     loc.posWord -= locCount - 1
+    #     print(num)
+    #     error.expect2("цифра")
+    #     loc.posWord = 0
+    #     locCount = 0
     # dictionary(intLex, num)
 
 
