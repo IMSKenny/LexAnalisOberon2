@@ -1,6 +1,7 @@
 x Scan Oberon2 GetSymbol firstLetter
 
-1991 01DH 12.0E-45 4.567E8 0.5771E-12
+
+ 01DH 12.0E-45 4.567E8 0.5771E-12
 "Oberon2" "Don't worry!" "x"
 
 'Oberon2' "Don't worry!" 'X'
