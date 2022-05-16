@@ -21,7 +21,7 @@ def Reset():
     global _src, listfile
 
     if len(sys.argv) != 3:
-        error.Error("Запуск: python Oberon2.py <файл программы.ob2(.obn)> <файл результатов.txt>")
+        error.Error("Запуск: python Oberon2.py <файл программы.ob2(.o)> <файл результатов.txt>")
     else:
         try:
             if sys.argv[1] == '*.ob2':

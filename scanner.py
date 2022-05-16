@@ -149,41 +149,12 @@ def scanIdent():
         dictionary(keywordsLex, ident)
 
 
-# def whatSymbol(char):
-#     global num, lex, intCount, realCount, charCount, locCount
-#
-#     num = str(num) + text.ch
-#     text.nextCh()
-#     if text.ch in {text.chEOL, text.chEOT, text.chSPACE}:
-#         if char == 'H':
-#             lex = Lex.NUMINT
-#             intCount += 1
-#             dictionary(intLex, num)
-#         else:
-#             lex = Lex.CHAR
-#             charCount += 1
-#             dictionary(charLex, num)
-#     else:
-#         num = str(num)
-#         while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
-#             num += text.ch
-#             text.nextCh()
-#             locCount += 1
-#         loc.posWord -= locCount
-#         print(num)
-#         error.expect2("пробел")
-#         loc.posWord = 0
-#         locCount = 0
-
-
-# распознавание чисел(целые, вещественные, шестнадцатеричных) и закодированных символов
+# распознавание чисел(целые и вещественные) и закодированных символов
 def scanNumber():
     global num, lex, intCount, realCount, charCount, locCount, signCount
     num = 0
     numED = 0
     numReal = 0
-    ed = 0
-    sign = 1
     while text.ch in string.digits:
         if num <= (MAXINT - int(text.ch)) // 10:
             num = 10 * num + int(text.ch)
@@ -275,6 +246,18 @@ def scanNumber():
         lex = Lex.NUMREAL
         realCount += 1
         dictionary(realLex, num)
+    elif text.ch == 'X':
+        num = str(num) + text.ch
+        lex = Lex.CHAR
+        charCount += 1
+        dictionary(charLex, num)
+        text.nextCh()
+    elif text.ch == 'H':
+        num = str(num) + text.ch
+        lex = Lex.NUMINT
+        intCount += 1
+        dictionary(intLex, num)
+        text.nextCh()
     else:
         lex = Lex.NUMINT
         intCount += 1
@@ -593,6 +576,8 @@ def writeValue(class_lex, dist_lex, count_lex, all_lex):
     write_file += '-' * 45 + text.chEOL
 
 
+
+
 def writeValueSort(class_lex, dist_lex, count_lex, all_lex):
     global write_file
 
@@ -618,6 +603,14 @@ def relFrequency(count, allLex):
         return "0"
     else:
         return str(round((count / allLex) * 100, 2)) + "%"
+
+
+def writeValueInTable(dist_lex, all_lex):
+    global write_file
+
+    for k, v in dist_lex.items():
+        write_file += ' ' * (15 - len(str(k))) + str(k) + ' ' * 7 + str(v) + ' ' * (13 - len(str(v))) + \
+                      relFrequency(v, all_lex) + text.chEOL
 
 
 def calcScan():
@@ -648,9 +641,8 @@ def calcScan():
                   ' ' * (13 - len(str(identCount))) + relFrequency(identCount, all_l) + text.chEOL
     write_file += ' ' * (15 - len('Знаки')) + 'Знаки' + ' ' * 7 + str(signCount) + ' ' * (13 - len(str(signCount))) + \
                   relFrequency(signCount, all_l) + text.chEOL
-    for k, v in keywordsLex.items():
-        write_file += ' ' * (15 - len(str(k))) + str(k) + ' ' * 7 + str(v) + ' ' * (13 - len(str(v))) + \
-                      relFrequency(v, all_l) + text.chEOL
+    writeValueInTable(keywordsLex, all_l)
+    writeValueInTable(signsLex, all_l)
     write_file += '-' * 45 + text.chEOL + text.chEOL
     # writeValue('ЦЕЛЫЕ', intLex, intCount, all_l)
     # writeValue('ВЕЩЕСТВЕННЫЕ', realLex, realCount, all_l)
