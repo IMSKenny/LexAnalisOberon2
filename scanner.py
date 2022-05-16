@@ -639,8 +639,6 @@ def calcScan():
                   relFrequency(strCount, all_l) + text.chEOL
     write_file += ' ' * (15 - len('Идентификаторы')) + 'Идентификаторы' + ' ' * 7 + str(identCount) + \
                   ' ' * (13 - len(str(identCount))) + relFrequency(identCount, all_l) + text.chEOL
-    write_file += ' ' * (15 - len('Знаки')) + 'Знаки' + ' ' * 7 + str(signCount) + ' ' * (13 - len(str(signCount))) + \
-                  relFrequency(signCount, all_l) + text.chEOL
     writeValueInTable(keywordsLex, all_l)
     writeValueInTable(signsLex, all_l)
     write_file += '-' * 45 + text.chEOL + text.chEOL
