@@ -515,6 +515,16 @@ def nextLex():
         signCount += 1
         dictionary(signsLex, '/')
         text.nextCh()
+    elif text.ch == '^':
+        lex = Lex.SLASH
+        signCount += 1
+        dictionary(signsLex, '^')
+        text.nextCh()
+    elif text.ch == '~':
+        lex = Lex.SLASH
+        signCount += 1
+        dictionary(signsLex, '~')
+        text.nextCh()
     elif text.ch == text.chEOT:
         lex = Lex.EOT
     else:
