@@ -5,7 +5,7 @@ x Scan Oberon2 GetSymbol firstLetter
 "Oberon2" "Don't worry!" "x"
 
 'Oberon2' "Don't worry!" 0X'X'''""*)
-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
 
 + := ARRAY IMPORT RETURN
  ^ BEGIN IN THEN
