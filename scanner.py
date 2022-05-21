@@ -195,9 +195,14 @@ def scanNumber():
             loc.posWord = 0
             locCount = 0
     elif text.ch == '.':
-        num = str(num) + text.ch
         text.nextCh()
-        if text.ch in string.digits:
+        if  text.ch == '.'
+            signCount += 1
+            dictionary(signsLex, '..')
+            intCount += 1
+            dictionary(intLex, num)
+        elif text.ch in string.digits:
+            num = str(num) + '.'
             while text.ch in string.digits:
                 if numReal <= (MAXINT - int(text.ch)) // 10:
                     numReal = 10 * numReal + int(text.ch)
@@ -509,6 +514,16 @@ def nextLex():
         lex = Lex.SLASH
         signCount += 1
         dictionary(signsLex, '/')
+        text.nextCh()
+    elif text.ch == '^':
+        lex = Lex.SLASH
+        signCount += 1
+        dictionary(signsLex, '^')
+        text.nextCh()
+    elif text.ch == '~':
+        lex = Lex.SLASH
+        signCount += 1
+        dictionary(signsLex, '~')
         text.nextCh()
     elif text.ch == text.chEOT:
         lex = Lex.EOT
