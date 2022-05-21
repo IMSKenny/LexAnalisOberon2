@@ -196,7 +196,7 @@ def scanNumber():
             locCount = 0
     elif text.ch == '.':
         text.nextCh()
-        if  text.ch == '.'
+        if  text.ch == '.':
             signCount += 1
             dictionary(signsLex, '..')
             intCount += 1
@@ -476,9 +476,11 @@ def nextLex():
         text.nextCh()
     elif text.ch == '^':
         lex = Lex.CARET
+        dictionary(signsLex, '^')
         text.nextCh()
     elif text.ch == '~':
         lex = Lex.TILDE
+        dictionary(signsLex, '~')
         text.nextCh()
     elif text.ch == '&':
         lex = Lex.AMPERSAND
@@ -514,16 +516,6 @@ def nextLex():
         lex = Lex.SLASH
         signCount += 1
         dictionary(signsLex, '/')
-        text.nextCh()
-    elif text.ch == '^':
-        lex = Lex.SLASH
-        signCount += 1
-        dictionary(signsLex, '^')
-        text.nextCh()
-    elif text.ch == '~':
-        lex = Lex.SLASH
-        signCount += 1
-        dictionary(signsLex, '~')
         text.nextCh()
     elif text.ch == text.chEOT:
         lex = Lex.EOT
@@ -630,6 +622,7 @@ def writeValueInTable(dist_lex, all_lex):
 
 def calcScan():
     global write_file
+
 
     text.nextCh()
     nextLex()
