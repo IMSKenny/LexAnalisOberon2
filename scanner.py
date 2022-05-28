@@ -189,19 +189,14 @@ def scanNumber():
                 text.nextCh()
                 locCount += 1
             locCount += 1
-            loc.posWord -= locCount - 1
+            loc.posWord -= locCount - 2
             print(num)
             error.expect2("'H', либо 'X'")
             loc.posWord = 0
             locCount = 0
     elif text.ch == '.':
         text.nextCh()
-        if  text.ch == '.':
-            signCount += 1
-            dictionary(signsLex, '..')
-            intCount += 1
-            dictionary(intLex, num)
-        elif text.ch in string.digits:
+        if text.ch in string.digits:
             num = str(num) + '.'
             while text.ch in string.digits:
                 if numReal <= (MAXINT - int(text.ch)) // 10:
@@ -248,9 +243,16 @@ def scanNumber():
                 error.expect2("цифра")
                 loc.posWord = 0
                 locCount = 0
-        lex = Lex.NUMREAL
-        realCount += 1
-        dictionary(realLex, num)
+        if  text.ch == '.':
+            signCount += 1
+            dictionary(signsLex, '..')
+            intCount += 1
+            dictionary(intLex, num)
+            text.nextCh()
+        else:
+            lex = Lex.NUMREAL
+            realCount += 1
+            dictionary(realLex, num)
     elif text.ch == 'X':
         num = str(num) + text.ch
         lex = Lex.CHAR

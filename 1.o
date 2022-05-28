@@ -1,10 +1,10 @@
-x Scan Oberon2 GetSymbol firstLetter
+(*x Scan Oberon2 GetSymbol firstLetter
 
 1991 01DH 12.0E-45 4.567E8 0.5771E-12 
 
 "Oberon2" "Don't worry!" "x"
 
-'Oberon2' "Don't worry!" 0X'X'''""*)
+'Oberon2' "Don't worry!" 0X'X'''""
 
 
 + := ARRAY IMPORT RETURN
@@ -19,6 +19,6 @@ x Scan Oberon2 GetSymbol firstLetter
 | : END POINTER
 ( ) EXIT PROCEDURE
 [ ] FOR RECORD
-{ } IF REPEAT
+{ } IF REPEAT*)
 
-1..2 r..5f 1 ..2
+1..2
