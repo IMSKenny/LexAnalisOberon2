@@ -195,9 +195,9 @@ def scanNumber():
             loc.posWord = 0
             locCount = 0
     elif text.ch == '.':
+        num = str(num) + text.ch
         text.nextCh()
         if text.ch in string.digits:
-            num = str(num) + '.'
             while text.ch in string.digits:
                 if numReal <= (MAXINT - int(text.ch)) // 10:
                     numReal = 10 * numReal + int(text.ch)
@@ -209,8 +209,8 @@ def scanNumber():
                     print(num)
                     error.lexError2("Слишком большое число")
                     loc.posWord = 0
-                num = str(num) + str(numReal)
                 text.nextCh()
+            num = str(num) + str(numReal)
         if text.ch in {'E', 'D'}:
             num = str(num) + text.ch
             text.nextCh()
