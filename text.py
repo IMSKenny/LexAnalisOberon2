@@ -21,7 +21,7 @@ def Reset():
     global _src, listfile
 
     if len(sys.argv) != 3:
-        error.Error("Запуск: python Oberon2.py <файл программы.ob2(.o)> <файл результатов.txt>")
+        error.Error("Запуск: python Oberon2.py <файл программы.ob2(.o)(.MOD)> <файл результатов.txt>")
     else:
         try:
             if sys.argv[1] == '*.ob2':
@@ -32,6 +32,12 @@ def Reset():
                     listfile += file + chEOL
             elif sys.argv[1] == '*.o':
                 for file in glob.glob("*.o"):
+                    _f = open(file)
+                    _src = _src + _f.read()
+                    _f.close()
+                    listfile += file + chEOL
+            elif sys.argv[1] == '*.MOD':
+                for file in glob.glob("*.MOD"):
                     _f = open(file)
                     _src = _src + _f.read()
                     _f.close()

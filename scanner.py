@@ -23,6 +23,7 @@ ident = ""
 strings = ""
 comm = ""
 locCount = 0
+strChar = ""
 identLex = dict()
 keywordsLex = dict()
 signsLex = dict()
@@ -133,12 +134,14 @@ def lexName(L):
 
 # распознавание идентификаторов и зарезервированных слов
 def scanIdent():
-    global lex, ident, keywordsCount, identCount
+    global lex, ident, keywordsCount, identCount, strChar
 
     ident = text.ch  # Первая буква
+    strChar += text.ch
     text.nextCh()
     while text.ch in string.ascii_letters + string.digits:
         ident += text.ch
+        strChar += text.ch
         text.nextCh()
     lex = _kw.get(ident, Lex.IDENT)
     if lex == Lex.IDENT:
@@ -151,7 +154,7 @@ def scanIdent():
 
 # распознавание чисел(целые и вещественные) и закодированных символов
 def scanNumber():
-    global num, lex, intCount, realCount, charCount, locCount, signCount
+    global num, lex, intCount, realCount, charCount, locCount, signCount, strChar
     num = 0
     numED = 0
     numReal = 0
@@ -160,25 +163,37 @@ def scanNumber():
             num = 10 * num + int(text.ch)
         else:
             num = str(num)
+            strChar = str(num)
+            loc.posEr = loc.pos
             while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
-                text.nextCh()
                 num += text.ch
+                strChar += text.ch
+                text.nextCh()
             print(num)
-            error.lexError2("Слишком большое число")
+            # print(strChar)
+            # print(loc.posEr)
+            error.lexError3("Слишком большое число")
             loc.posWord = 0
+            if strChar == text.chEOL:
+                strChar = ""
         text.nextCh()
     if text.ch in {"A", "B", "C", "D", "E", "F"}:
         while text.ch in string.digits or text.ch in {"A", "B", "C", "D", "E", "F"}:
             num = str(num) + text.ch
+            loc.posEr = loc.pos
             text.nextCh()
+        strChar += str(num)
         if text.ch == 'H':
             num += text.ch
+            strChar += text.ch
+            # print(strChar)
             lex = Lex.NUMINT
             intCount += 1
             dictionary(intLex, num)
             text.nextCh()
         elif text.ch == 'X':
             num += text.ch
+            strChar += text.ch
             lex = Lex.CHAR
             charCount += 1
             dictionary(charLex, num)
@@ -186,38 +201,58 @@ def scanNumber():
         else:
             while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
                 num = str(num) + text.ch
+                strChar += text.ch
                 text.nextCh()
                 locCount += 1
+            # strChar += str(num)
             locCount += 1
             loc.posWord -= locCount - 2
-            print(num)
-            error.expect2("'H', либо 'X'")
+            loc.posEr += 1
+            # print(num)
+            print(strChar)
+            error.expect3("'H', либо 'X'")
             loc.posWord = 0
             locCount = 0
+            if strChar == text.chEOL:
+                strChar = ""
     elif text.ch == '.':
-        num = str(num) + text.ch
         text.nextCh()
+        num = str(num) + '.'
+        strChar += str(num)
         if text.ch in string.digits:
             while text.ch in string.digits:
                 if numReal <= (MAXINT - int(text.ch)) // 10:
                     numReal = 10 * numReal + int(text.ch)
                 else:
                     num = str(num) + str(numReal)
+                    strChar += str(numReal)
+                    loc.posEr = loc.pos
                     while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
-                        text.nextCh()
                         num += text.ch
-                    print(num)
-                    error.lexError2("Слишком большое число")
+                        strChar += text.ch
+                        text.nextCh()
+                    # print(num)
+                    print(strChar)
+                    error.lexError3("Слишком большое число после точки")
                     loc.posWord = 0
+                    if strChar == text.chEOL:
+                        strChar = ""
                 text.nextCh()
             num = str(num) + str(numReal)
+            # strChar += str(num)
+            strChar += str(numReal)
         if text.ch in {'E', 'D'}:
+            ed = text.ch
             num = str(num) + text.ch
+            strChar += text.ch
             text.nextCh()
             if text.ch in {'+', '-'}:
-                num += '+'
                 if text.ch == '-':
                     num += '-'
+                    strChar += '-'
+                else:
+                    num += '+'
+                    strChar += '+'
                 text.nextCh()
             if text.ch in string.digits:
                 while text.ch in string.digits:
@@ -225,47 +260,58 @@ def scanNumber():
                         numED = 10 * numED+ int(text.ch)
                     else:
                         num = str(num) + str(numED)
+                        strChar += str(numED)
+                        loc.posEr = loc.pos
                         while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
-                            text.nextCh()
                             num += text.ch
-                        print(num)
-                        error.lexError2("Слишком большое число")
+                            strChar += text.ch
+                            text.nextCh()
+                        print(strChar)
+                        error.lexError3("Слишком большое число после " + str(ed))
                         loc.posWord = 0
-                    num = str(num) + str(numED)
                     text.nextCh()
+                num = str(num) + str(numED)
+                strChar += str(numED)
             else:
+                loc.posEr = loc.pos
                 while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
                     num += text.ch
                     text.nextCh()
                     locCount += 1
                 loc.posWord -= locCount - 1
-                print(num)
-                error.expect2("цифра")
+                print(strChar)
+                error.expect3("цифра")
                 loc.posWord = 0
                 locCount = 0
-        if  text.ch == '.':
+        if text.ch == '.':
             signCount += 1
             dictionary(signsLex, '..')
             intCount += 1
             dictionary(intLex, num)
+            strChar += '.'
             text.nextCh()
         else:
+            num = str(num) + '.'
+            # strChar += str(num)
             lex = Lex.NUMREAL
             realCount += 1
             dictionary(realLex, num)
     elif text.ch == 'X':
         num = str(num) + text.ch
+        strChar += str(num)
         lex = Lex.CHAR
         charCount += 1
         dictionary(charLex, num)
         text.nextCh()
     elif text.ch == 'H':
         num = str(num) + text.ch
+        strChar += str(num)
         lex = Lex.NUMINT
         intCount += 1
         dictionary(intLex, num)
         text.nextCh()
     else:
+        strChar += str(num)
         lex = Lex.NUMINT
         intCount += 1
         dictionary(intLex, num)
@@ -275,26 +321,33 @@ def scanNumber():
 
 # распознавание комментариев
 def Comment():
-    global comm
+    global comm, strChar
 
     comm += text.ch
+    strChar += text.ch
     text.nextCh()  # *
     while True:
         while text.ch not in {'*', text.chEOT, '('}:
             comm += text.ch
+            strChar += text.ch
             text.nextCh()
+            loc.posEr = loc.pos
         if text.ch == text.chEOT:
-            print(comm)
-            error.lexError("Не закончен комментарий")
+            loc.posEr += 1
+            print(strChar)
+            error.lexError3("Не закончен комментарий")
         elif text.ch == '*':
             comm += text.ch
+            strChar += text.ch
             text.nextCh()
             if text.ch == ')':
                 comm += text.ch
+                strChar += text.ch
                 text.nextCh()
                 break
         else:
             comm += text.ch
+            strChar += text.ch
             text.nextCh()
             if text.ch == '*':
                 Comment()
@@ -302,78 +355,103 @@ def Comment():
 
 # распознавание строк
 def stringLine():
-    global strings, lex, strCount
+    global strings, lex, strCount, strChar, strChar
 
     strings = ''
     if text.ch == '"':
         strings += text.ch
+        strChar += text.ch
         text.nextCh()
         while text.ch not in {'"', text.chEOT}:
-            if text.ch == "\\":
-                strings += text.ch
-                text.nextCh()
-                if text.ch == '"' or "'":
-                    strings += text.ch
-                    text.nextCh()
+            # if text.ch == "\\":
+            #     # print(strings)
+            #     strings += text.ch
+            #     text.nextCh()
+            #     if text.ch == '"' or "'":
+            #         strings += text.ch
+            #         text.nextCh()
             strings += text.ch
+            strChar += text.ch
             text.nextCh()
         if text.ch == text.chEOT:
+            loc.posEr = loc.pos
             while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
                 text.nextCh()
                 strings += text.ch
-            print(strings)
-            error.lexError("Не закончена строка")
+                strChar += text.ch
+            loc.posEr += 1
+            print(strChar)
+            error.lexError3("Не закончена строка")
         if text.ch == '"':
             strings += text.ch
+            strChar += text.ch
             text.nextCh()
             lex = Lex.STR
             strCount += 1
             dictionary(strLex, strings)
         else:
+            loc.posEr = loc.pos
             while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
                 text.nextCh()
                 strings += text.ch
-            print(strings)
-            error.lexError("Нет разделителя после строки")
+                strChar += text.ch
+            loc.posEr += 1
+            print(strChar)
+            error.lexError3("Нет разделителя после строки")
 
     elif text.ch == "'":
         strings += text.ch
+        strChar += text.ch
         text.nextCh()
         while text.ch not in {"'", text.chEOT}:
-            if text.ch == '\\':
-                strings += text.ch
-                text.nextCh()
-                if text.ch == "'" or '"':
-                    strings += text.ch
-                    text.nextCh()
+            # if text.ch == '\\':
+            #     strings += text.ch
+            #     text.nextCh()
+            #     if text.ch == "'" or '"':
+            #         strings += text.ch
+            #         text.nextCh()
             strings += text.ch
+            strChar += text.ch
             text.nextCh()
         if text.ch == text.chEOT:
+            loc.posEr = loc.pos
             while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
                 text.nextCh()
                 strings += text.ch
-            print(strings)
-            error.lexError("Не закончена строка")
+                strChar += text.ch
+            loc.posEr += 1
+            print(strChar)
+            error.lexError3("Не закончена строка")
         if text.ch == "'":
             strings += text.ch
+            strChar += text.ch
             text.nextCh()
             lex = Lex.STR
             strCount += 1
             dictionary(strLex, strings)
         else:
+            loc.posEr = loc.pos
             while text.ch not in {text.chEOL, text.chEOT, text.chSPACE}:
                 text.nextCh()
                 strings += text.ch
-            print(strings)
-            error.lexError("Нет разделителя после строки")
+                strChar += text.ch
+            loc.posEr += 1
+            print(strChar)
+            error.lexError3("Нет разделителя после строки")
 
 
 # распознавание лексемы
 def nextLex():
-    global lex, signCount, comm
+    global lex, signCount, comm, strChar
 
     loc.lexPos = loc.pos
     while text.ch in {text.chSPACE, text.chTAB, text.chEOL}:
+        if text.ch == text.chSPACE:
+            strChar += text.chSPACE
+        if text.ch == text.chTAB:
+            strChar += text.chTAB
+        if text.ch == text.chEOL:
+            strChar = ""
         text.nextCh()
         loc.posWord = 0
     if text.ch in string.ascii_letters:
@@ -381,6 +459,7 @@ def nextLex():
     elif text.ch in string.digits:
         scanNumber()
     elif text.ch == ';':
+        strChar += text.ch
         lex = Lex.SEMI
         signCount += 1
         dictionary(signsLex, ';')
@@ -389,20 +468,24 @@ def nextLex():
         stringLine()
     elif text.ch == '(':
         comm += text.ch
+        strChar += text.ch
         text.nextCh()
         if text.ch == '*':
             Comment()
             nextLex()
         else:
+            # strChar += '('
             lex = Lex.LPAR
             signCount += 1
             dictionary(signsLex, '(')
     elif text.ch == ')':
+        strChar += text.ch
         lex = Lex.RPAR
         signCount += 1
         dictionary(signsLex, ')')
         text.nextCh()
     elif text.ch == ',':
+        strChar += text.ch
         lex = Lex.COMMA
         signCount += 1
         dictionary(signsLex, ',')
@@ -410,111 +493,133 @@ def nextLex():
     elif text.ch == '.':
         text.nextCh()
         if text.ch == '.':
+            strChar += text.ch + '.'
             lex = Lex.TWODOT
             signCount += 1
             dictionary(signsLex, '..')
             text.nextCh()
         else:
+            strChar += '.'
             lex = Lex.DOT
             signCount += 1
             dictionary(signsLex, '.')
     elif text.ch == ':':
         text.nextCh()
         if text.ch == '=':
+            strChar += ':='
             lex = Lex.ASS
             signCount += 1
             dictionary(signsLex, ':=')
             text.nextCh()
         else:
+            strChar += ':'
             lex = Lex.COLON
             signCount += 1
             dictionary(signsLex, ':')
     elif text.ch == '>':
         text.nextCh()
         if text.ch == '=':
+            strChar += '>='
             lex = Lex.GE
             signCount += 1
             dictionary(signsLex, '>=')
             text.nextCh()
         else:
+            strChar += '>'
             lex = Lex.GT
             signCount += 1
             dictionary(signsLex, '>')
     elif text.ch == '<':
         text.nextCh()
         if text.ch == '=':
+            strChar += '<='
             lex = Lex.LE
             signCount += 1
             dictionary(signsLex, '<=')
             text.nextCh()
         else:
+            strChar += '<'
             lex = Lex.LT
             signCount += 1
             dictionary(signsLex, '<')
     elif text.ch == '=':
+        strChar += text.ch
         lex = Lex.EQ
         signCount += 1
         dictionary(signsLex, '=')
         text.nextCh()
     elif text.ch == '#':
+        strChar += text.ch
         lex = Lex.NE
         signCount += 1
         dictionary(signsLex, '#')
         text.nextCh()
     elif text.ch == '+':
+        strChar += text.ch
         lex = Lex.PLUS
         signCount += 1
         dictionary(signsLex, '+')
         text.nextCh()
     elif text.ch == '-':
+        strChar += text.ch
         lex = Lex.MINUS
         signCount += 1
         dictionary(signsLex, '-')
         text.nextCh()
     elif text.ch == '*':
+        strChar += text.ch
         lex = Lex.MULT
         signCount += 1
         dictionary(signsLex, '*')
         text.nextCh()
     elif text.ch == '^':
+        strChar += text.ch
         lex = Lex.CARET
         dictionary(signsLex, '^')
         text.nextCh()
     elif text.ch == '~':
+        strChar += text.ch
         lex = Lex.TILDE
         dictionary(signsLex, '~')
         text.nextCh()
     elif text.ch == '&':
+        strChar += text.ch
         lex = Lex.AMPERSAND
         signCount += 1
         dictionary(signsLex, '&')
         text.nextCh()
     elif text.ch == '|':
+        strChar += text.ch
         lex = Lex.PIPELINE
         signCount += 1
         dictionary(signsLex, '|')
         text.nextCh()
     elif text.ch == '[':
+        strChar += text.ch
         lex = Lex.LBRACKET
         signCount += 1
         dictionary(signsLex, '[')
         text.nextCh()
     elif text.ch == ']':
+        strChar += text.ch
         lex = Lex.RBRACKET
         signCount += 1
         dictionary(signsLex, ']')
         text.nextCh()
     elif text.ch == '{':
+        strChar += text.ch
         lex = Lex.LBRACES
         signCount += 1
         dictionary(signsLex, '{')
         text.nextCh()
     elif text.ch == '}':
+        strChar += text.ch
         lex = Lex.RBRACES
         signCount += 1
         dictionary(signsLex, '}')
         text.nextCh()
     elif text.ch == '/':
+        strChar += text.ch
         lex = Lex.SLASH
         signCount += 1
         dictionary(signsLex, '/')
@@ -522,7 +627,8 @@ def nextLex():
     elif text.ch == text.chEOT:
         lex = Lex.EOT
     else:
-        print(text.ch)
+        strChar += text.ch
+        print(strChar)
         error.lexError("Недопустимый символ")
 
 

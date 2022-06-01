@@ -3,7 +3,7 @@ import scanner
 import text
 
 
-print(text.chEOL + 'Лексический анализатор языка программирования Оберон-2' + text.chEOL + "-"*54)
+print(text.chEOL + 'Лексический анализатор языка программирования Оберон-2' + text.chEOL + "-"*53)
 text.Reset()
 scanner.calcScan()
 text.safeFile(scanner.write_file)
